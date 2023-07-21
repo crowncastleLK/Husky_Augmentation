@@ -49,7 +49,7 @@ ros2 launch microstrain_inertial_driver microstrain_launch.py configure:=true ac
 
 Ensure correct port is present in microstrain_driver_common/config/params.yml
 
-### Navigation stack
+## Navigation stack
 
 Launches the nav2 stack on the Husky to perform mapless go to goal and Obtsace avoidance
 ```
@@ -60,7 +60,7 @@ ros2 launch nav2_bringup navigation_launch.py params_file:=husky_nav2_config.yam
 We publish a static transform between the base_link frame and map frame as we do not have a static map outdoors. 
 ```husky_nav2_config.yaml``` file contains the parameters tuned for the husky. global_costmap has ```rolling_window: true``` due to lack of a static map.
 
-### Mapping
+## Mapping
 
 Launch the Husky, sensors and the teleop node. 
 
@@ -72,7 +72,7 @@ LIO-SAM:
 
 LeGO-LOAM and LOAM algorithms were tested in ROS1, ingored as they have no ROS2 packages. 
 
-### Curb Detection
+## Curb Detection
 
 A geometric solution to perform curb Detection from LiDAR data using Point CLoud Library. The detected curb points are used to track a path at a fixed offset from the curb.
 
