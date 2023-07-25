@@ -71,8 +71,29 @@ class Fusion_node : public rclcpp::Node
     
     void image_callback(const sensor_msgs::msg::Image::SharedPtr msg) const
     {
+       // std::cout << "size filterd = "<<cloudo->size(); 
+        //RCLCPP_INFO(this->get_logger(), "I heard");
+        /*
+        try {
+              cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
+              cv::waitKey(10);
+            } 
             
-         /*extrinsics: ros2 run tf2_ros tf2_echo os_lidar camera_color_optical_frame
+        catch (cv_bridge::Exception & e) {
+                  auto logger = rclcpp::get_logger("my_subscriber");
+                  RCLCPP_ERROR(logger, "Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
+           }*/
+           
+         cv::Mat R(3, 3, CV_64F);
+         cv::Mat T(3, 1, CV_64F);
+         
+         /*extrinsics: os_lidar to camera_optical_color_frame - ros2 run tf2_ros tf2_echo camera_color_optical_frame os_lidar
+
+         - Translation: [0.032, -0.175, 0.004]
+         - Rotation: in Quaternion [0.270, 0.271, -0.654, 0.652] 
+         rotation - angles - x: 0.785447, y: 0.0002242, z: -1.573952*/
+         /*
+         ros2 run tf2_ros tf2_echo os_lidar camera_color_optical_frame
          At time 0.0
          - Translation: [-0.121, -0.033, -0.127]
          - Rotation: in Quaternion [-0.270, -0.271, 0.654, 0.652]
@@ -82,19 +103,22 @@ class Fusion_node : public rclcpp::Node
          /*intrinsics 
          run rs-enumerate-devices -c in terminal
           Intrinsic of "Color" / 1280x720 / {YUYV/RGB8/BGR8/RGBA8/BGRA8/Y16}
-          Width:      	1280
-          Height:     	720
-          PPX:        	634.006408691406
-          PPY:        	359.488098144531
-          Fx:         	907.704406738281
-          Fy:         	907.281127929688
-          Distortion: 	Inverse Brown Conrady
-          Coeffs:     	0  	0  	0  	0  	0  
-          FOV (deg):  	70.37 x 43.29
-        */
-
-         cv::Mat R(3, 3, CV_64F);
-         cv::Mat T(3, 1, CV_64F);
+  Width:      	1280
+  Height:     	720
+  PPX:        	634.006408691406
+  PPY:        	359.488098144531
+  Fx:         	907.704406738281
+  Fy:         	907.281127929688
+  Distortion: 	Inverse Brown Conrady
+  Coeffs:     	0  	0  	0  	0  	0  
+  FOV (deg):  	70.37 x 43.29
+*/
+         /*double extrinsics_rx=0.785447;
+         double extrinsics_ry=0.0002242;
+         double extrinsics_rz=-1.573952;
+         double extrinsics_tx=0.032;
+         double extrinsics_ty=-0.175;
+         double extrinsics_tz=0.004;*/
                   
          double extrinsics_rx=0.0033801;
          double extrinsics_ry=-0.7854413;
