@@ -1,0 +1,704 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:arg name="laser_enabled" default="$(optenv CPR_LASER_ENABLED 0)" />
+  <xacro:arg name="laser_xyz" default="$(optenv CPR_LASER_XYZ 0.2206 0.0 0.00635)" />
+  <xacro:arg name="laser_rpy" default="$(optenv CPR_LASER_RPY 0.0 0.0 0.0)" />
+
+  <xacro:arg name="realsense_enabled" default="$(optenv CPR_REALSENSE 0)" />
+  <xacro:arg name="realsense_xyz" default="$(optenv CPR_REALSENSE_XYZ 0 0 0)" />
+  <xacro:arg name="realsense_rpy" default="$(optenv CPR_REALSENSE_RPY 0 0 0)" />
+  <xacro:arg name="realsense_mount" default="$(optenv CPR_REALSENSE_MOUNT_FRAME sensor_arch_mount_link)" />
+
+  <xacro:property name="husky_front_bumper_extend" value="$(optenv HUSKY_FRONT_BUMPER_EXTEND 0)" />
+  <xacro:property name="husky_rear_bumper_extend" value="$(optenv HUSKY_REAR_BUMPER_EXTEND 0)" />
+
+  <xacro:arg name="robot_namespace" default="/" />
+  <xacro:arg name="is_sim" default="false" />
+  <xacro:arg name="urdf_extras" default="$(optenv CPR_URDF_EXTRAS empty.urdf)" />
+
+  <xacro:arg name="serial_port" default="$(optenv HUSKY_SERIAL_PORT /dev/prolific)" />
+  <xacro:arg name="use_nominal_extrinsics" default="false" />
+
+  <!-- Included URDF/XACRO Files -->
+  <xacro:include filename="$(find husky_description)/urdf/decorations.urdf.xacro" />
+  <xacro:include filename="$(find husky_description)/urdf/wheel.urdf.xacro" />
+  
+    
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435i.urdf.xacro"/>
+
+  <xacro:include filename="$(find husky_description)/urdf/accessories/intel_realsense.urdf.xacro"/>
+  <!-- <xacro:include filename="$(find husky_description)/urdf/accessories/sick_lms1xx_mount.urdf.xacro"/> -->
+  <xacro:include filename="$(find husky_description)/urdf/accessories/sensor_arch.urdf.xacro"/>
+
+  <xacro:property name="M_PI" value="3.14159"/>
+
+  <xacro:macro name="husky" params="prefix">
+
+    <!-- Base Size -->
+    <xacro:property name="base_x_size" value="0.98740000" />
+    <xacro:property name="base_y_size" value="0.57090000" />
+    <xacro:property name="base_z_size" value="0.24750000" />
+
+    <!-- Wheel Mounting Positions -->
+    <xacro:property name="wheelbase" value="0.5120" />
+    <xacro:property name="track" value="0.5708" />
+    <xacro:property name="wheel_vertical_offset" value="0.03282" />
+
+    <!-- Wheel Properties -->
+    <xacro:property name="wheel_length" value="0.1143" />
+    <xacro:property name="wheel_radius" value="0.1651" />
+
+    <!-- Base link is the center of the robot's bottom plate -->
+    <link name="${prefix}base_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://husky_description/meshes/base_link.dae" />
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="${( husky_front_bumper_extend - husky_rear_bumper_extend ) / 2.0} 0 ${base_z_size/4}" rpy="0 0 0" />
+        <geometry>
+          <box size="${ base_x_size + husky_front_bumper_extend + husky_rear_bumper_extend } ${base_y_size} ${base_z_size/2}"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 ${base_z_size*3/4-0.01}" rpy="0 0 0" />
+        <geometry>
+          <box size="${base_x_size*4/5} ${base_y_size} ${base_z_size/2-0.02}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Base footprint is on the ground under the robot -->
+  
+    <link name="${prefix}base_footprint"/>
+
+    <joint name="${prefix}base_footprint_joint" type="fixed">
+      <origin xyz="0 0 ${wheel_vertical_offset - wheel_radius}" rpy="0 0 0" />
+      <parent link="${prefix}base_link" />
+      <child link="${prefix}base_footprint" />
+    </joint> 
+    
+    
+
+    <!-- Inertial link stores the robot's inertial information -->
+    <link name="${prefix}inertial_link">
+      <inertial>
+        <mass value="46.034" />
+        <origin xyz="-0.00065 -0.085 0.062" />
+        <inertia ixx="0.6022" ixy="-0.02364" ixz="-0.1197" iyy="1.7386" iyz="-0.001544" izz="2.0296" />
+      </inertial>
+    </link>
+
+    <joint name="${prefix}inertial_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <parent link="${prefix}base_link" />
+      <child link="${prefix}inertial_link" />
+    </joint>
+
+    <!-- IMU Link-->
+    <!-- Can be modified with environment variables in /etc/ros/setup.bash -->
+    <link name="${prefix}imu_link"/>
+    <joint name="${prefix}imu_joint" type="fixed">
+      <origin xyz="$(optenv CPR_IMU_XYZ 0 0 0)" rpy="$(optenv CPR_IMU_RPY 0 0 0)" />
+      <parent link="${prefix}base_link" />
+      <child link="${prefix}imu_link" />
+    </joint>
+
+    <!-- GPS Link-->
+    <!-- Can be modified with environment variables in /etc/ros/setup.bash -->
+    <link name="${prefix}gps_link"/>
+    <joint name="${prefix}gps_joint" type="fixed">
+      <origin xyz="$(optenv CPR_GPS_XYZ 0 0 0)" rpy="$(optenv CPR_GPS_RPY 0 0 0)" />
+      <parent link="${prefix}base_link" />
+      <child link="${prefix}gps_link" />
+    </joint>
+
+     
+  <link
+    name="plate_link">
+    <inertial>
+      <origin
+        xyz="1.51841739686117E-06 0.217702480334483 0.10337194353501"
+        rpy="0 0 0" />
+      <mass
+        value="3.43579942471049" />
+      <inertia
+        ixx="0.0839007972174073"
+        ixy="-8.16841419972499E-18"
+        ixz="-2.45268280782475E-12"
+        iyy="0.123973068418061"
+        iyz="0.000189419828769455"
+        izz="0.0421838222352592" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/plate_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.250980392156863 0.250980392156863 0.250980392156863 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/plate_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  
+  
+   <joint
+    name="plate_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 1.57" />
+    <parent
+      link="base_link" />
+    <child
+      link="plate_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  
+  <link
+    name="l_gnss_link">
+    <inertial>
+      <origin
+        xyz="0.000124609008117726 7.66617830327831E-09 0.0102528003680311"
+        rpy="0 0 0" />
+      <mass
+        value="0.0701964032409456" />
+      <inertia
+        ixx="2.17814587000315E-05"
+        ixy="2.83762091549197E-11"
+        ixz="4.22773611169793E-09"
+        iyy="2.02617157250508E-05"
+        iyz="-5.75688515653656E-12"
+        izz="3.64648240418004E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/l_gnss_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.509803921568627 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/l_gnss_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="l_gnss_joint"
+    type="fixed">
+    <origin
+      xyz="0.222500000000147 -0.232687355330983 0.409425000000008"
+      rpy="0 0 3.14159265358979" />
+    <parent
+      link="plate_link" />
+    <child
+      link="l_gnss_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="r_gnss_link">
+    <inertial>
+      <origin
+        xyz="0.000124609008123611 7.66617838654504E-09 0.010252800368031"
+        rpy="0 0 0" />
+      <mass
+        value="0.0701964032409453" />
+      <inertia
+        ixx="2.17814587000314E-05"
+        ixy="2.83762091330025E-11"
+        ixz="4.22773611182136E-09"
+        iyy="2.02617157250507E-05"
+        iyz="-5.75688522696241E-12"
+        izz="3.64648240418002E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/r_gnss_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.509803921568627 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/r_gnss_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="r_gnss_joint"
+    type="fixed">
+    <origin
+      xyz="-0.222499999999849 -0.232687355330983 0.409425000000011"
+      rpy="0 0 0" />
+    <parent
+      link="plate_link" />
+    <child
+      link="r_gnss_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="os_sensor">
+    <inertial>
+      <origin
+        xyz="0.00189899503220095 -2.27467289361314E-06 -0.0052562660592802"
+        rpy="0 0 0" />
+      <mass
+        value="0.818090335795892" />
+      <inertia
+        ixx="0.00109605890566487"
+        ixy="5.828824898437E-09"
+        ixz="9.14474609291753E-06"
+        iyy="0.000788817921503734"
+        iyz="-1.30836536867828E-08"
+        izz="0.00151823152143701" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0.785398163397443 -1.57079632679489" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/os_sensor.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/os_sensor.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="ouster_joint"
+    type="fixed">
+    <origin
+      xyz="0 -0.484709604427087 0.312829328932582"
+      rpy="0 0.785398163397443 -1.57079632679489" />
+    <parent
+      link="plate_link" />
+    <child
+      link="os_sensor" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  
+  <link name="os_imu" />
+
+  <link name="os_lidar" />
+
+
+    <joint name="ouster_imu_link_joint" type="fixed">
+      <parent link="os_sensor" />
+      <child link="os_imu" />
+      <origin xyz="0.006253 -0.011775 0.007645" rpy="0 0 0" />
+    </joint>
+
+
+    <joint name="ouster_lidar_link_joint" type="fixed">
+      <parent link="os_sensor" />
+      <child link="os_lidar" />
+      <origin xyz="0.0 0.0 0.03618" rpy="0 0 3.14" />
+    </joint>
+  
+  <link
+    name="l_rs_link">
+    <inertial>
+      <origin
+        xyz="0.00168162835091112 2.49429217691333E-06 -0.0132723219640002"
+        rpy="0 0 0" />
+      <mass
+        value="0.0381925087892179" />
+      <inertia
+        ixx="2.11195789050057E-06"
+        ixy="-7.8505168622085E-09"
+        ixz="4.52141592209166E-08"
+        iyy="2.22593860090099E-05"
+        iyz="-1.30044992733574E-08"
+        izz="2.3576234083329E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/l_rs_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/l_rs_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="l_rs_joint"
+    type="fixed">
+    <origin
+      xyz="0.22755231806118 -0.232687355330983 0.382669786798316"
+      rpy="-1.83259571459405 0 -1.5707963267949" />
+    <parent
+      link="plate_link" />
+    <child
+      link="l_rs_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="r_rs_link">
+    <inertial>
+      <origin
+        xyz="0.00168164156528267 2.49000785967901E-06 -0.0132723145550583"
+        rpy="0 0 0" />
+      <mass
+        value="0.0381924678690491" />
+      <inertia
+        ixx="2.11198182723984E-06"
+        ixy="-7.84310817836137E-09"
+        ixz="4.52129507808281E-08"
+        iyy="2.22593611799269E-05"
+        iyz="-1.30036949521211E-08"
+        izz="2.35762341803649E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/r_rs_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/r_rs_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="r_rs_joint"
+    type="fixed">
+    <origin
+      xyz="-0.227552318061205 -0.232692455331 0.382669786798291"
+      rpy="1.83259571459412 0 -1.5707963267949" />
+    <parent
+      link="plate_link" />
+    <child
+      link="r_rs_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="f_rs_link">
+    <inertial>
+      <origin
+        xyz="0.00168172493037785 2.49411756339524E-06 -0.0132722979188402"
+        rpy="0 0 0" />
+      <mass
+        value="0.0381925640618229" />
+      <inertia
+        ixx="2.11195644163414E-06"
+        ixy="-7.84806623029052E-09"
+        ixz="4.52136752794108E-08"
+        iyy="2.22593860722202E-05"
+        iyz="-1.30042954639318E-08"
+        izz="2.35762325846014E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/f_rs_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://husky_description/meshes/sensors/f_rs_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="f_rs_joint"
+    type="fixed">
+    <origin
+      xyz="9.96250059669459E-05 -0.510747555330992 0.163366540707293"
+      rpy="1.5707963267949 0 0" />
+    <parent
+      link="plate_link" />
+    <child
+      link="f_rs_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+ <!--
+  <link
+    name="ins_link">
+  </link>
+  <joint
+    name="ins_joint"
+    type="fixed">
+    <origin
+      xyz="0.37712 0.00912 0.24575"
+      rpy="0 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="ins_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+-->
+  <link
+    name="ins_link">
+  </link>
+  <joint
+    name="ins_joint"
+    type="fixed">
+    <origin
+      xyz="0.38807 0.01557 0.23768"
+      rpy="0 0 3.14159" />
+    <parent
+      link="base_link" />
+    <child
+      link="ins_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
+    <link
+    name="sensor_wgs84">
+  </link>
+  
+  <joint
+    name="ins_child_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="ins_link" />
+    <child
+      link="sensor_wgs84" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  
+    <xacro:sensor_d435i parent="f_rs_link" use_nominal_extrinsics="$(arg use_nominal_extrinsics)">
+    <origin xyz="0 -0.0125 -0.015" rpy=" -1.57 -1.57 0"/>
+    </xacro:sensor_d435i>
+     
+     
+      <link
+    name="camera_color_link">
+  </link>
+    
+    
+      <joint
+    name="camera_color_joint"
+    type="fixed">
+    <origin
+      xyz="0 0.015 0"
+      rpy="0 0 0" />
+    <parent
+      link="camera_link" />
+    <child
+      link="camera_color_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  
+  
+      <joint name="camera_color_optical_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="-1.5707963 0 -1.5707963" />
+        <parent link="camera_color_link" />
+        <child link="camera_color_optical_frame" />
+      </joint>
+      <link name="camera_color_optical_frame"/>
+  
+    <!-- Husky wheel macros -->
+    <xacro:husky_wheel wheel_prefix="${prefix}front_left">
+      <origin xyz="${wheelbase/2} ${track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+    </xacro:husky_wheel>
+    <xacro:husky_wheel wheel_prefix="${prefix}front_right">
+      <origin xyz="${wheelbase/2} ${-track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+    </xacro:husky_wheel>
+    <xacro:husky_wheel wheel_prefix="${prefix}rear_left">
+      <origin xyz="${-wheelbase/2} ${track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+    </xacro:husky_wheel>
+    <xacro:husky_wheel wheel_prefix="${prefix}rear_right">
+      <origin xyz="${-wheelbase/2} ${-track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+    </xacro:husky_wheel>
+
+    <xacro:husky_decorate />
+
+    <!-- <xacro:if value="$(arg laser_enabled)">
+
+      <xacro:sick_lms1xx_mount prefix="base"/>
+
+      <xacro:sick_lms1xx frame="base_laser" topic="scan" robot_namespace="$(arg robot_namespace)"/>
+
+      <joint name="laser_mount_joint" type="fixed">
+        <origin xyz="$(arg laser_xyz)" rpy="$(arg laser_rpy)" />
+        <parent link="top_plate_link" />
+        <child link="base_laser_mount" />
+      </joint>
+
+    </xacro:if> -->
+
+    <!--
+      top sensor arch; include this if we have realsense enabled
+      keep this as a property to make it easier to add multiple conditions, should we need
+      the top bar for any additional sensors in the future
+    -->
+    <!-- <xacro:property name="topbar_needed_realsense" value="$(arg realsense_enabled)" />
+    <xacro:if value="${topbar_needed_realsense}">
+      <xacro:sensor_arch prefix="" parent="top_plate_link">
+        <origin xyz="-0.35 0 0.51" rpy="0 0 -3.14"/>
+      </xacro:sensor_arch>
+    </xacro:if> -->
+
+    <!-- add the intel realsense to the topbar if needed -->
+    <xacro:if value="$(arg realsense_enabled)">
+      <link name="realsense_mountpoint"/>
+      <joint name="realsense_mountpoint_joint" type="fixed">
+        <origin xyz="$(arg realsense_xyz)" rpy="$(arg realsense_rpy)" />
+        <parent link="$(arg realsense_mount)"/>
+        <child link="realsense_mountpoint" />
+      </joint>
+      <xacro:intel_realsense_mount prefix="camera" topic="realsense" parent_link="realsense_mountpoint"/>
+    </xacro:if>
+
+    <ros2_control name="${prefix}husky_hardware" type="system">
+      <hardware>
+        <xacro:if value="$(arg is_sim)">
+          <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="$(arg is_sim)">
+          <plugin>husky_base/HuskyHardware</plugin>
+          <plugin>fake_components/GenericSystem</plugin>
+          <param name="hw_start_duration_sec">2.0</param>
+          <param name="hw_stop_duration_sec">3.0</param>
+          <param name="wheel_diameter">0.3302</param>
+          <param name="max_accel">5.0</param>
+          <param name="max_speed">1.0</param>
+          <param name="polling_timeout">0.1</param>
+          <param name="serial_port">$(arg serial_port)</param>
+        </xacro:unless>
+      </hardware>
+      <joint name="${prefix}front_left_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-1</param>
+          <param name="max">1</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="${prefix}rear_left_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-1</param>
+          <param name="max">1</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="${prefix}front_right_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-1</param>
+          <param name="max">1</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="${prefix}rear_right_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-1</param>
+          <param name="max">1</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>
