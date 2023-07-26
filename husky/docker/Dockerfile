@@ -19,19 +19,22 @@ RUN sudo apt -y install ros-$ROS_DISTRO-controller-manager
 RUN sudo apt -y install ros-$ROS_DISTRO-robot-localization
 RUN sudo apt -y install ros-$ROS_DISTRO-interactive-marker-twist-server
 RUN sudo apt -y install ros-$ROS_DISTRO-twist-mux
+RUN sudo apt -y install ros-$ROS_DISTRO-joy
+RUN sudo apt -y install ros-$ROS_DISTRO-teleop-twist-joy
 
 
 RUN mkdir -p /husky_ws/src
 WORKDIR /husky_ws/
 RUN git clone -b foxy-devel https://github.com/husky/husky.git
 
+RUN rosdep update --rosdistro=$ROS_DISTRO
 RUN rosdep install --from-paths src --ignore-src --rosdistro=$ROS_DISTRO -y
 # build the ros2 workspace
 RUN . /opt/ros/${ROS_DISTRO}/setup.sh && colcon build
 
 # Update ros_entrypoint.sh
 RUN /bin/sed -i \
-  '/source "\/opt\/ros\/$ROS_DISTRO\/setup.bash"/a source "\/husky_ws\/install\/local_setup.bash"' \
+  '/source "\/opt\/ros\/$ROS_DISTRO\/setup.bash"/a source "\/husky_ws\/install\/setup.bash"' \
   /ros_entrypoint.sh
 
 #RUN source /ros_entrypoint.sh
