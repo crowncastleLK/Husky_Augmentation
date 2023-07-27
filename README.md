@@ -27,6 +27,12 @@ Password: testing123
 
 ## Launching the Husky
 
+### Docker 
+
+```
+docker run -it --network=host --device=/dev/prolific --device=/dev/video0 --device=/dev/video1 --device=/dev/video2 --device=/dev/video3 --device=/dev/video4 --device=/dev/video5 --device=/dev/input/event18  husky_aug 
+```
+
 These Commands launch the Husky Robot with basic teleop capabilities.
 ### Husky_base
 ```
