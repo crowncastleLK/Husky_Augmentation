@@ -84,13 +84,18 @@ ros2 launch lio_sam run.launch.py
 ```
 ## Sensor Calibration
 
-[Open Calib](https://github.com/PJLab-ADG/SensorsCalibration)  was used to perform extrinsic calibration.
+[Open Calib](https://github.com/PJLab-ADG/SensorsCalibration) was used to perform extrinsic calibration.
+
+Camera intrinsics were directly obtained from realsense camera_info topic.
+fx=907.704406738281; fy=907.281127929688; cx=634.006408691406; cy=359.488098144531;
 
 ### LiDAR-Camera Calibration
 Calibrated Parameters:
-
+rx=0.0033801; ry=-0.7854413; rz=1.5752593; tx=-0.121; ty=-0.033; tz=-0.127;
 
 ### LiDAR-IMU Calibration
+Calibrated Parameters:
+rx=-0.0010833; ry=-0.7858898; rz=-0.0026135; tx=-0.119; ty=0.016; tz=-0.103
 
 ## Perception
 ### Curb Following
