@@ -87,7 +87,8 @@ ros2 launch lio_sam run.launch.py
 [Open Calib](https://github.com/PJLab-ADG/SensorsCalibration) was used to perform extrinsic calibration.
 
 Camera intrinsics were directly obtained from realsense camera_info topic.
-fx=907.704406738281; fy=907.281127929688; cx=634.006408691406; cy=359.488098144531;
+
+fx = 907.704406738281; fy = 907.281127929688; cx = 634.006408691406; cy = 359.488098144531;
 
 ### LiDAR-Camera Calibration
 Calibrated Parameters:
