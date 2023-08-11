@@ -1,5 +1,5 @@
 # Husky_Augmentation
-Husky packages integrated with ROS2 that can perform Autonomous Navigation, Mapping and Curb Following
+Husky packages integrated with ROS2 that can perform Autonomous Navigation, Mapping and Curb Following, Object Detection and Semantic segmentation
 
 ## Installation:
 
