@@ -68,18 +68,34 @@ We publish a static transform between the base_link frame and map frame as we do
 
 ## Mapping
 
-Launch the Husky, sensors and the teleop node. 
+Launch the Husky, sensors and the teleop node. You dcan use either RTABmap or LIO-SAM. LIO-SAM is better.
 
 RTAB-map:
 
-Cartographer:
+Installation instructions can bge found [here](https://github.com/introlab/rtabmap_ros) .
+```
+ros2 launch husky_base ouster.launch.py 
+```
 
 LIO-SAM:
 
-LeGO-LOAM and LOAM algorithms were tested in ROS1, ingored as they have no ROS2 packages. 
+Installation instructions can be found [here](https://github.com/TixiaoShan/LIO-SAM).
 
-## Curb Detection
+```
+ros2 launch lio_sam run.launch.py 
+```
+## Sensor Calibration
 
+(Open Calib)[https://github.com/PJLab-ADG/SensorsCalibration]  was used to perform extrinsic calibration.
+
+### LiDAR-Camera Calibration
+Calibrated Parameters:
+
+
+### LiDAR-IMU Calibration
+
+## Perception
+### Curb Following
 A geometric solution to perform curb Detection from LiDAR data using Point CLoud Library. The detected curb points are used to track a path at a fixed offset from the curb.
 
 Steps involved:
@@ -87,9 +103,46 @@ Steps involved:
 2. Passthrough filters to crop out the region of interest
 3. Statistical outlier removal
 4. Normal Detection, followed again by outlier removal
-5. The Curb Points have normals which have angles in range (-50,50) with the y axis of base_link frame of the robot. FIlter out all points which do not follow this condition. Remove outiers again.
+5. The Curb Points have normals which have angles in range (-50,50) with the y axis of base_link frame of the robot. Filter out all points which do not follow this condition. Remove outiers again.
 6. Project the detected curb points onto ground plane (z=0) and shift the points by the user given offset.
 7. Compute the centroid of the shifted points and use a PID controller to track the y coordinate (distance from the curb) at the specified offset.
+
+Set the offset that you nee. The robot has to positioned such that the distance from the curb is as close to the offset.
+```
+ros2 run husky_perception curb_node 
+```
+### LiDAR-Camera Fusion:
+Use the extrinsic parameters from calibration to fuse the LiDAR and camera. Run the following command to project LiDAR points onto the camera. This can be used to get objects that the camera detects. 
+
+```
+ros2 run husky_perception fusion_node 
+```
+While the robot is moving, use below command
+```
+ros2 run husky_perception fusion_sync_node 
+```
+
+
+### Semantic segmentation
+
+Uses Nvidia Jetson Infernce package to perform semantic segmentation. This runs on the Orin, so the Husky's onboard computer annd the Orin must have the same DOMAIN_ID to share topics.
+
+### 3D Object Detection
+
+## Internship Summary:
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
