@@ -151,6 +151,8 @@ Viusalisation - change paths accordingly
 ```
 python3 viewer.py "/home/user/viz_3Dbbox_ros2_pointpillars/bin/000001.bin" "/home/user/viz_3Dbbox_ros2_pointpillars/txt/000001.txt" "/home/user/viz_3Dbbox_ros2_pointpillars/images/purple.png"
 ```
+All pictures and videos are in the Loahit_Summer2023_Internship folder
+
 ## Internship Summary:
 * Developed ROS packages (C++ and Python) containerized with Docker for 3D Mapping and Perception.
 * Performed sensor fusion on the Husky Robot with wheel odometry, GPS and IMU using an EKF to achieve precise outdoor localization.
