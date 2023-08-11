@@ -3,8 +3,6 @@ Husky packages integrated with ROS2 that can perform Autonomous Navigation, Mapp
 
 ## Installation:
 
-### Dependencies:
-1. 
 ```
 mkdir -r husky_ws/src && cd husky_ws/src
 git clone 
@@ -86,7 +84,7 @@ ros2 launch lio_sam run.launch.py
 ```
 ## Sensor Calibration
 
-(Open Calib)[https://github.com/PJLab-ADG/SensorsCalibration]  was used to perform extrinsic calibration.
+[Open Calib](https://github.com/PJLab-ADG/SensorsCalibration)  was used to perform extrinsic calibration.
 
 ### LiDAR-Camera Calibration
 Calibrated Parameters:
@@ -127,9 +125,41 @@ ros2 run husky_perception fusion_sync_node
 
 Uses Nvidia Jetson Infernce package to perform semantic segmentation. This runs on the Orin, so the Husky's onboard computer annd the Orin must have the same DOMAIN_ID to share topics.
 
+Installation instructions can be found [here](https://github.com/dusty-nv/ros_deep_learning).
+
+To run the segmenation model on images from intel realsense, run
+```
+ros2 launch ros_deep_learning seg.ros2.launch
+```
+
 ### 3D Object Detection
 
+Installation:
+1. [Point Pillars](https://github.com/NVIDIA-AI-IOT/CUDA-PointPillars)
+2. [ROS bag to KITTI](https://github.com/leofansq/Tools_RosBag2KITTI)
+3. [Bounding box visualization tool](https://github.com/NVIDIA-AI-IOT/viz_3Dbbox_ros2_pointpillars)
+
+Uses pointpillars model for 3D LiDAR Object detection. It has not been integrated with ROS yet. Place your poitncloud files in the data folder of CUDA-Pointpillars. 
+
+Ouster PointCloud -> ROS msg -> KITTI format -> TensorRT inference
+
+Inference
+```
+cd build && ./demo
+```
+Viusalisation - change paths accordingly
+```
+python3 viewer.py "/home/user/viz_3Dbbox_ros2_pointpillars/bin/000001.bin" "/home/user/viz_3Dbbox_ros2_pointpillars/txt/000001.txt" "/home/user/viz_3Dbbox_ros2_pointpillars/images/purple.png"
+```
 ## Internship Summary:
+* Developed ROS packages (C++ and Python) containerized with Docker for 3D Mapping and Perception.
+* Performed sensor fusion on the Husky Robot with wheel odometry, GPS and IMU using an EKF to achieve precise outdoor localization.
+* Deployed ROS2 Navigation Stack on the robot for Autonomous Navigation.
+* Created robust calibration routines to perform LiDAR-Camera and LiDAR-IMU calibration.
+* Performed 3D mapping using SLAM algorithms like LIO-SAM and RTAB-map.
+* Building Geometric and Learning based perception algorithms to perform curb detection, 3D object detection(PointPillars) and segmentation (SegNet).
+
+
 
 
 
